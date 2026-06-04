@@ -533,21 +533,32 @@ function openReg(day) {
   const p = PESERTA[day];
   if(!p) return;
   currentRegDay = day;
+
+  // Tampilkan langsung pakai data lokal dulu
+  document.getElementById('regTitle').textContent = 'Daftar Peserta IHT ' + day + ' Juni 2026';
+  document.getElementById('regSubtitle').textContent = 'Pilih nama Anda untuk mendaftar';
+  document.getElementById('regSearch').value = '';
+  document.getElementById('regPanel').classList.add('active');
+
+  refreshRegUI(day);
+
+  // Fetch GAS di background (tidak blokir tampilan)
+  loadRegData().then(() => refreshRegUI(day));
+}
+
+function refreshRegUI(day) {
+  const p = PESERTA[day];
   const registered = regData[day] || [];
   const kuota = p.kuota;
   const sisa = kuota === 999 ? '∞' : Math.max(0, kuota - registered.length);
-  
-  document.getElementById('regTitle').textContent = 'Daftar Peserta IHT ' + day + ' Juni 2026';
-  document.getElementById('regSubtitle').textContent = 'Pilih nama Anda untuk mendaftar';
+
   document.getElementById('regKuotaLeft').textContent = sisa;
   document.getElementById('regKuotaUsed').textContent = registered.length;
-  
+
   const full = kuota !== 999 && registered.length >= kuota;
   document.getElementById('regFullMsg').style.display = full ? 'block' : 'none';
-  
-  document.getElementById('regSearch').value = '';
+
   renderRegList(p.names, registered, full);
-  document.getElementById('regPanel').classList.add('active');
 }
 
 function renderRegList(names, registered, full) {
@@ -556,11 +567,13 @@ function renderRegList(names, registered, full) {
     el.innerHTML = '<div class="reg-empty">Tidak ada data peserta</div>';
     return;
   }
-  el.innerHTML = names.map((n,i) => {
-    const isDone = registered.includes(n);
-    if(isDone) {
-      return '<div class="reg-item registered"><span class="reg-item-num">'+(i+1)+'.</span>'+escHtml(n)+'</div>';
-    }
+  // Hanya tampilkan yang BELUM terdaftar
+  const belumDaftar = names.filter(n => !registered.includes(n));
+  if(belumDaftar.length === 0) {
+    el.innerHTML = '<div class="reg-empty">Semua peserta sudah terdaftar 🎉</div>';
+    return;
+  }
+  el.innerHTML = belumDaftar.map((n,i) => {
     if(full) {
       return '<div class="reg-item" style="opacity:.5;cursor:not-allowed"><span class="reg-item-num">'+(i+1)+'.</span>'+escHtml(n)+'</div>';
     }
@@ -608,8 +621,10 @@ async function daftar(nama) {
     if(res.success) {
       if(!regData[day]) regData[day] = [];
       regData[day].push(nama);
-      openReg(day);
+      // Update UI langsung, sync GAS di background
+      refreshRegUI(day);
       alert('✅ Berhasil terdaftar!\n\n' + nama);
+      loadRegData().then(() => { if(currentRegDay == day) refreshRegUI(day); });
     } else {
       alert('Gagal mendaftar: ' + (res.message || 'Error'));
     }
