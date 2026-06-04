@@ -254,7 +254,111 @@ body{font-family:'Poppins',sans-serif;background:#d8d8d8;min-height:100vh;displa
 }
 .admin-empty { color:#aaa; font-size:.83rem; font-style:italic; }
 
+
+/* ===== BATAL DAFTAR (admin) ===== */
+.admin-name-item {
+  display:flex; align-items:center; justify-content:space-between;
+  font-size:.83rem; padding:6px 0; border-bottom:1px solid #f0f0f0; color:#444;
+}
+.admin-name-item .nama-txt { flex:1; }
+.btn-batal {
+  background:#fff; border:1px solid #e53935; color:#e53935;
+  border-radius:5px; padding:3px 9px; font-size:.75rem;
+  cursor:pointer; white-space:nowrap; margin-left:8px;
+}
+.btn-batal:hover { background:#ffebee; }
+
+/* ===== ADMIN TABS ===== */
+.admin-tabs {
+  display:flex; border-bottom:2px solid #eee; background:#fafafa;
+}
+.admin-tab {
+  flex:1; padding:11px 6px; text-align:center; font-size:.82rem;
+  font-weight:600; cursor:pointer; color:#888; border:none;
+  background:none; transition:.2s;
+}
+.admin-tab.active { color:#e86b1a; border-bottom:2px solid #e86b1a; }
+
+/* ===== QR CODE PANEL ===== */
+.qr-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px;
+}
+.qr-card {
+  border:1px solid #eee; border-radius:10px; padding:12px;
+  text-align:center; background:#fff;
+}
+.qr-card h4 { margin:0 0 8px; font-size:.85rem; color:#333; }
+.qr-card canvas { display:block; margin:0 auto 8px; }
+.qr-card small { color:#888; font-size:.75rem; display:block; margin-bottom:8px; }
+.btn-print-qr {
+  background:#e86b1a; color:#fff; border:none; border-radius:6px;
+  padding:6px 12px; font-size:.75rem; cursor:pointer; width:100%;
+}
+
+/* ===== TTD PANEL ===== */
+.ttd-overlay {
+  position:fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.85); z-index:5000;
+  display:none; align-items:center; justify-content:center;
+}
+.ttd-overlay.active { display:flex; }
+.ttd-box {
+  background:#fff; border-radius:16px; width:95%; max-width:500px;
+  overflow:hidden; box-shadow:0 8px 40px rgba(0,0,0,.4);
+}
+.ttd-header {
+  background:linear-gradient(135deg,#e86b1a,#f59c3c);
+  color:#fff; padding:14px 18px;
+}
+.ttd-header h3 { margin:0; font-size:.95rem; }
+.ttd-header p { margin:4px 0 0; font-size:.78rem; opacity:.9; }
+.ttd-body { padding:16px; }
+.ttd-select-wrap { margin-bottom:12px; }
+.ttd-select-wrap label { font-size:.82rem; color:#555; font-weight:600; display:block; margin-bottom:5px; }
+.ttd-select {
+  width:100%; padding:9px 12px; border:1.5px solid #ddd;
+  border-radius:8px; font-size:.88rem; box-sizing:border-box;
+  outline:none; background:#fff;
+}
+.ttd-select:focus { border-color:#e86b1a; }
+.ttd-canvas-wrap {
+  border:2px dashed #ddd; border-radius:10px;
+  background:#f9f9f9; margin-bottom:10px; position:relative;
+  overflow:hidden;
+}
+.ttd-canvas-wrap canvas { display:block; touch-action:none; }
+.ttd-canvas-hint {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  color:#ccc; font-size:.85rem; pointer-events:none; text-align:center;
+}
+.ttd-btns { display:flex; gap:8px; }
+.btn-clear-ttd {
+  flex:1; padding:10px; background:#f5f5f5; color:#555;
+  border:1px solid #ddd; border-radius:8px; font-size:.88rem; cursor:pointer;
+}
+.btn-submit-ttd {
+  flex:2; padding:10px; background:linear-gradient(135deg,#e86b1a,#f59c3c);
+  color:#fff; border:none; border-radius:8px; font-size:.88rem;
+  font-weight:700; cursor:pointer;
+}
+.ttd-close-btn {
+  position:absolute; top:12px; right:14px;
+  background:rgba(255,255,255,.25); border:none; color:#fff;
+  border-radius:50%; width:28px; height:28px; font-size:1rem;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+}
+
+/* ===== ADMIN TTD VIEWER ===== */
+.ttd-item {
+  border:1px solid #eee; border-radius:8px; padding:10px 12px;
+  margin-bottom:8px; font-size:.82rem;
+}
+.ttd-item .ttd-nama { font-weight:700; color:#333; margin-bottom:4px; }
+.ttd-item .ttd-waktu { color:#888; font-size:.75rem; margin-bottom:6px; }
+.ttd-item img { max-width:100%; border:1px solid #eee; border-radius:4px; }
+
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 <div class="wrapper">
@@ -670,27 +774,83 @@ function checkAdmin() {
 
 function renderAdminContent() {
   const el = document.getElementById('adminContent');
+  // Buat tabs
+  el.innerHTML = `
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchAdminTab('peserta',this)">📋 Peserta</button>
+      <button class="admin-tab" onclick="switchAdminTab('qr',this)">📲 QR Absensi</button>
+      <button class="admin-tab" onclick="switchAdminTab('ttd',this)">✍️ Tanda Tangan</button>
+    </div>
+    <div id="adminTabPeserta" style="padding:12px 0;overflow-y:auto;max-height:65vh;"></div>
+    <div id="adminTabQR" style="display:none;overflow-y:auto;max-height:65vh;"></div>
+    <div id="adminTabTTD" style="padding:12px 0;overflow-y:auto;max-height:65vh;"></div>
+  `;
+  renderAdminPeserta();
+  renderAdminQR();
+  renderAdminTTD();
+}
+
+function switchAdminTab(tab, btn) {
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('adminTabPeserta').style.display = tab==='peserta'?'block':'none';
+  document.getElementById('adminTabQR').style.display = tab==='qr'?'block':'none';
+  document.getElementById('adminTabTTD').style.display = tab==='ttd'?'block':'none';
+}
+
+function renderAdminPeserta() {
+  const el = document.getElementById('adminTabPeserta');
   const tanggals = Object.keys(PESERTA).sort((a,b)=>+a-+b);
-  
   el.innerHTML = tanggals.map(t => {
     const registered = regData[t] || [];
     const kuota = PESERTA[t].kuota;
     const kuotaStr = kuota === 999 ? '∞' : kuota;
     return '<div class="admin-tanggal">' +
       '<div class="admin-tanggal-header" onclick="toggleAdmin(this)">' +
-        '<h4>📅 ' + t + ' Juni 2026 <small style="color:#888;font-weight:400">(' + registered.length + '/' + kuotaStr + ' peserta)</small></h4>' +
+        '<h4>📅 ' + t + ' Juni 2026 <small style="color:#888;font-weight:400">(' + registered.length + '/' + kuotaStr + ')</small></h4>' +
         '<span>▼</span>' +
       '</div>' +
       '<div class="admin-tanggal-body">' +
         (registered.length === 0
           ? '<div class="admin-empty">Belum ada yang mendaftar</div>'
-          : registered.map((n,i)=>'<div class="admin-name-item">'+(i+1)+'. '+escHtml(n)+'</div>').join('')) +
+          : registered.map((n,i)=>
+              '<div class="admin-name-item">' +
+                '<span class="nama-txt">'+(i+1)+'. '+escHtml(n)+'</span>' +
+                '<button class="btn-batal" onclick="batalDaftar(\'' + t + '\',\'' + escAttr(n) + '\')">✕ Batal</button>' +
+              '</div>'
+            ).join('')) +
         (registered.length > 0
           ? '<button class="admin-download" onclick="downloadExcel('+t+')">⬇ Download Excel</button>'
           : '') +
       '</div>' +
     '</div>';
   }).join('');
+}
+
+function renderAdminQR() {
+  const el = document.getElementById('adminTabQR');
+  const tanggals = Object.keys(PESERTA).sort((a,b)=>+a-+b);
+  const evtInfo = {
+    8:'Asuhan Keperawatan', 15:'Mitigasi Bencana', 17:'PPI Lanjutan Gel 1',
+    18:'Komunikasi Efektif', 19:'PMKP Gel 2', 23:'Hospitalpreneur Gel 5',
+    25:'PPI Lanjutan Gel 2', 26:'Pemasangan Infus', 29:'Unit Dose Dispensing', 30:'Sapa Talk'
+  };
+  el.innerHTML = '<div class="qr-grid">' +
+    tanggals.map(t => {
+      return '<div class="qr-card" id="qrcard'+t+'">' +
+        '<h4>'+t+' Juni 2026</h4>' +
+        '<small>'+(evtInfo[+t]||'IHT')+'</small>' +
+        '<div id="qrdiv'+t+'" style="display:inline-block;margin:6px auto 8px;"></div>' +
+        '<button class="btn-print-qr" onclick="printQR('+t+')">🖨️ Print QR</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+  setTimeout(()=>generateAllQR(), 200);
+}
+
+function renderAdminTTD() {
+  const el = document.getElementById('adminTabTTD');
+  el.innerHTML = '<div style="padding:12px;"><button onclick="loadTTDAdmin()" style="background:#e86b1a;color:#fff;border:none;border-radius:8px;padding:9px 18px;cursor:pointer;font-size:.85rem;">🔄 Muat Data Tanda Tangan</button></div><div id="ttdAdminList"></div>';
 }
 
 function toggleAdmin(el) {
@@ -716,6 +876,260 @@ function downloadExcel(day) {
 
 // Load data saat halaman dibuka
 loadRegData();
+
+
+// ===== BATAL DAFTAR =====
+async function batalDaftar(tanggal, nama) {
+  if(!confirm('Batalkan pendaftaran:\n\n' + nama + '\n\nDari IHT ' + tanggal + ' Juni 2026?')) return;
+  try {
+    const url = GAS_URL + '?action=batal&tanggal=' + encodeURIComponent(tanggal) + '&nama=' + encodeURIComponent(nama);
+    const r = await fetch(url, {redirect:'follow'});
+    const res = await r.json();
+    if(res.success) {
+      await loadRegData();
+      renderAdminPeserta();
+      alert('✅ Pendaftaran ' + nama + ' berhasil dibatalkan');
+    } else {
+      alert('Gagal: ' + (res.message||'Error'));
+    }
+  } catch(e) {
+    alert('Koneksi gagal: ' + e.message);
+  }
+}
+
+// ===== QR CODE =====
+// Generate QR code menggunakan QR Server API (tidak perlu library)
+function generateAllQR() {
+  const tanggals = Object.keys(PESERTA).sort((a,b)=>+a-+b);
+  const baseUrl = window.location.href.split('?')[0].split('#')[0];
+  tanggals.forEach(t => {
+    const div = document.getElementById('qrdiv'+t);
+    if(!div || div.innerHTML.trim() !== '') return;
+    const ttdUrl = baseUrl + '?ttd=' + t;
+    try {
+      new QRCode(div, {
+        text: ttdUrl,
+        width: 140,
+        height: 140,
+        colorDark: '#1a1a2e',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch(e) {
+      div.innerHTML = '<div style="font-size:.7rem;color:#e53935;">QR Error</div>';
+    }
+  });
+}
+
+function printQR(day) {
+  const div = document.getElementById('qrdiv'+day);
+  const canvas = div ? div.querySelector('canvas') : null;
+  const dataUrl = canvas ? canvas.toDataURL() : '';
+  const evtInfo = {
+    8:'Asuhan Keperawatan', 15:'Mitigasi Bencana', 17:'PPI Lanjutan Gel 1',
+    18:'Komunikasi Efektif', 19:'PMKP Gel 2', 23:'Hospitalpreneur Gel 5',
+    25:'PPI Lanjutan Gel 2', 26:'Pemasangan Infus', 29:'Unit Dose Dispensing', 30:'Sapa Talk'
+  };
+  const w = window.open('','_blank');
+  w.document.write(`
+    <html><head><title>QR IHT ${day} Juni 2026</title>
+    <style>
+      body{font-family:Arial,sans-serif;text-align:center;padding:40px;}
+      img{width:250px;height:250px;}
+      h2{color:#e86b1a;margin-bottom:6px;}
+      p{color:#555;font-size:14px;}
+      .scan{font-size:13px;color:#888;margin-top:8px;}
+      @media print{button{display:none}}
+    </style></head><body>
+    <img src="${dataUrl}"><br>
+    <h2>IHT ${day} Juni 2026</h2>
+    <p>${evtInfo[+day]||'In House Training'}</p>
+    <p class="scan">Scan QR ini untuk mengisi daftar hadir</p>
+    <br><button onclick="window.print()">🖨️ Print</button>
+    </body></html>
+  `);
+}
+
+// ===== TTD (TANDA TANGAN DIGITAL) =====
+let ttdDay = null;
+let ttdDrawing = false;
+let ttdCanvas, ttdCtx;
+let ttdHasDraw = false;
+
+function initTTDCanvas() {
+  ttdCanvas = document.getElementById('ttdCanvas');
+  ttdCtx = ttdCanvas.getContext('2d');
+  ttdCtx.strokeStyle = '#1a1a2e';
+  ttdCtx.lineWidth = 2.5;
+  ttdCtx.lineCap = 'round';
+  ttdCtx.lineJoin = 'round';
+
+  function getPos(e) {
+    const rect = ttdCanvas.getBoundingClientRect();
+    const scaleX = ttdCanvas.width / rect.width;
+    const scaleY = ttdCanvas.height / rect.height;
+    const src = e.touches ? e.touches[0] : e;
+    return {
+      x: (src.clientX - rect.left) * scaleX,
+      y: (src.clientY - rect.top) * scaleY
+    };
+  }
+
+  function start(e) {
+    e.preventDefault();
+    ttdDrawing = true;
+    ttdHasDraw = true;
+    document.getElementById('ttdHint').style.display='none';
+    const p = getPos(e);
+    ttdCtx.beginPath();
+    ttdCtx.moveTo(p.x, p.y);
+  }
+  function draw(e) {
+    if(!ttdDrawing) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ttdCtx.lineTo(p.x, p.y);
+    ttdCtx.stroke();
+  }
+  function stop(e) { ttdDrawing = false; }
+
+  ttdCanvas.addEventListener('mousedown', start);
+  ttdCanvas.addEventListener('mousemove', draw);
+  ttdCanvas.addEventListener('mouseup', stop);
+  ttdCanvas.addEventListener('mouseleave', stop);
+  ttdCanvas.addEventListener('touchstart', start, {passive:false});
+  ttdCanvas.addEventListener('touchmove', draw, {passive:false});
+  ttdCanvas.addEventListener('touchend', stop);
+}
+
+function openTTD(day) {
+  ttdDay = day;
+  const registered = regData[day] || [];
+  const ttdDone = ttdData[day] || [];
+
+  document.getElementById('ttdTitle').textContent = '✍️ Absensi IHT ' + day + ' Juni 2026';
+
+  // Isi dropdown hanya peserta terdaftar yang belum TTD
+  const sel = document.getElementById('ttdNamaSelect');
+  sel.innerHTML = '<option value="">-- Pilih nama Anda --</option>';
+  registered.filter(n => !ttdDone.includes(n)).forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = n;
+    opt.textContent = n;
+    sel.appendChild(opt);
+  });
+
+  if(registered.length === 0) {
+    sel.innerHTML = '<option value="">Belum ada peserta terdaftar</option>';
+  }
+
+  clearTTD();
+  document.getElementById('ttdOverlay').classList.add('active');
+  if(!ttdCanvas) initTTDCanvas();
+}
+
+function closeTTD() {
+  document.getElementById('ttdOverlay').classList.remove('active');
+}
+
+function clearTTD() {
+  if(!ttdCanvas) return;
+  ttdCtx.clearRect(0, 0, ttdCanvas.width, ttdCanvas.height);
+  ttdHasDraw = false;
+  document.getElementById('ttdHint').style.display='block';
+}
+
+async function submitTTD() {
+  const nama = document.getElementById('ttdNamaSelect').value;
+  if(!nama) { alert('Pilih nama Anda terlebih dahulu!'); return; }
+  if(!ttdHasDraw) { alert('Silakan buat tanda tangan terlebih dahulu!'); return; }
+
+  const ttdImg = ttdCanvas.toDataURL('image/png');
+  const waktu = new Date().toLocaleString('id-ID', {timeZone:'Asia/Jakarta'});
+
+  try {
+    const url = GAS_URL + '?action=saveTTD&tanggal=' + encodeURIComponent(ttdDay) +
+      '&nama=' + encodeURIComponent(nama) +
+      '&waktu=' + encodeURIComponent(waktu) +
+      '&ttd=' + encodeURIComponent(ttdImg);
+    const r = await fetch(url, {redirect:'follow'});
+    const res = await r.json();
+    if(res.success) {
+      if(!ttdData[ttdDay]) ttdData[ttdDay] = [];
+      ttdData[ttdDay].push(nama);
+      alert('✅ Tanda tangan berhasil disimpan!\n\n' + nama + '\n' + waktu);
+      closeTTD();
+    } else {
+      alert('Gagal: ' + (res.message||'Error'));
+    }
+  } catch(e) {
+    alert('Koneksi gagal: ' + e.message);
+  }
+}
+
+// Cek URL parameter ?ttd=tanggal saat halaman dibuka
+let ttdData = {};
+function checkTTDParam() {
+  // Support ?ttd=X dan #ttd=X
+  let ttdDay = new URLSearchParams(window.location.search).get('ttd');
+  if(!ttdDay) ttdDay = new URLSearchParams(window.location.hash.replace('#','?')).get('ttd');
+  if(ttdDay && PESERTA[ttdDay]) {
+    loadRegData().then(() => {
+      loadTTDData().then(() => openTTD(ttdDay));
+    });
+  }
+}
+
+async function loadTTDData() {
+  if(!GAS_URL || GAS_URL==='GAS_URL_PLACEHOLDER') return;
+  try {
+    const r = await fetch(GAS_URL + '?action=getTTD', {redirect:'follow'});
+    const d = await r.json();
+    ttdData = d || {};
+  } catch(e) { ttdData = {}; }
+}
+
+async function loadTTDAdmin() {
+  const el = document.getElementById('ttdAdminList');
+  el.innerHTML = '<div style="padding:12px;color:#888;">⏳ Memuat...</div>';
+  try {
+    const r = await fetch(GAS_URL + '?action=getTTDDetail', {redirect:'follow'});
+    const d = await r.json();
+    if(!d || Object.keys(d).length===0) {
+      el.innerHTML = '<div style="padding:12px;color:#aaa;">Belum ada tanda tangan</div>';
+      return;
+    }
+    el.innerHTML = Object.keys(d).sort((a,b)=>+a-+b).map(t => {
+      const items = d[t];
+      return '<div class="admin-tanggal">' +
+        '<div class="admin-tanggal-header" onclick="toggleAdmin(this)">' +
+          '<h4>📅 '+t+' Juni 2026 <small style="color:#888;font-weight:400">('+items.length+' TTD)</small></h4><span>▼</span>' +
+        '</div>' +
+        '<div class="admin-tanggal-body">' +
+          items.map(item =>
+            '<div class="ttd-item">' +
+              '<div class="ttd-nama">'+escHtml(item.nama)+'</div>' +
+              '<div class="ttd-waktu">🕐 '+escHtml(item.waktu)+'</div>' +
+              '<img src="'+item.ttd+'" alt="TTD">' +
+            '</div>'
+          ).join('') +
+          '<button class="admin-download" onclick="downloadTTDExcel('+t+')">⬇ Download Rekap</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="padding:12px;color:#e53935;">Gagal memuat: '+e.message+'</div>';
+  }
+}
+
+function downloadTTDExcel(day) {
+  // TTD download dari admin view - ambil data yang sudah dirender
+  alert('Silakan screenshot atau export dari Google Sheets untuk rekap TTD tanggal '+day);
+}
+
+// Init
+checkTTDParam();
+loadTTDData();
 
 </script>
 
@@ -759,6 +1173,34 @@ loadRegData();
       <div class="err" id="adminErr"></div>
     </div>
     <div class="admin-content" id="adminContent"></div>
+  </div>
+</div>
+
+
+<!-- ===== TTD OVERLAY ===== -->
+<div class="ttd-overlay" id="ttdOverlay">
+  <div class="ttd-box" style="position:relative;">
+    <div class="ttd-header">
+      <button class="ttd-close-btn" onclick="closeTTD()">✕</button>
+      <h3 id="ttdTitle">✍️ Tanda Tangan Kehadiran</h3>
+      <p id="ttdSubtitle">IHT — DKH Hospitals Cibadak</p>
+    </div>
+    <div class="ttd-body">
+      <div class="ttd-select-wrap">
+        <label>Pilih nama Anda:</label>
+        <select class="ttd-select" id="ttdNamaSelect">
+          <option value="">-- Pilih nama --</option>
+        </select>
+      </div>
+      <div class="ttd-canvas-wrap">
+        <canvas id="ttdCanvas" width="460" height="180"></canvas>
+        <div class="ttd-canvas-hint" id="ttdHint">✍️ Tanda tangan di sini</div>
+      </div>
+      <div class="ttd-btns">
+        <button class="btn-clear-ttd" onclick="clearTTD()">🗑 Hapus</button>
+        <button class="btn-submit-ttd" onclick="submitTTD()">✅ Kirim Tanda Tangan</button>
+      </div>
+    </div>
   </div>
 </div>
 
